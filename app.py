@@ -4,16 +4,16 @@ import torch.nn as nn
 import numpy as np
 import torchvision.utils as vutils
 
-# --- Definições do Modelo (DEVEM SER IDÊNTICAS às do script de treinamento) ---
-# Parâmetros
+# --- Model Definitions (MUST BE IDENTICAL to the training script) ---
+# Parameters
 latent_dim = 100
 n_classes = 10
 img_size = 28
 channels = 1
 img_shape = (channels, img_size, img_size)
-device = torch.device("cpu") # O app pode rodar em CPU
+device = torch.device("cpu") # App can run on CPU
 
-# Arquitetura do Gerador
+# Generator Architecture
 class Generator(nn.Module):
     def __init__(self):
         super(Generator, self).__init__()
@@ -34,48 +34,48 @@ class Generator(nn.Module):
         img = img.view(img.size(0), *img_shape)
         return img
 
-# --- Carregar o Modelo Treinado ---
+# --- Load the Trained Model ---
 @st.cache_resource
 def load_model():
     model = Generator().to(device)
-    # Carrega os pesos salvos
+    # Load the saved weights
     model.load_state_dict(torch.load('generator.pth', map_location=device))
-    model.eval() # Coloca o modelo em modo de avaliação
+    model.eval() # Set the model to evaluation mode
     return model
 
 generator = load_model()
 
-# --- Interface do Streamlit ---
-st.title("Gerador de Dígitos Manuscritos")
-st.write("Gere imagens sintéticas no estilo MNIST usando um modelo treinado do zero.") # 
+# --- Streamlit Interface (in English) ---
+st.title("Handwritten Digit Generator")
+st.write("Generate synthetic MNIST-like images using a model trained from scratch.")
 
-# Seleção do dígito pelo usuário
+# User digit selection
 digit_to_generate = st.selectbox(
-    'Escolha um dígito para gerar (0-9)', # 
+    'Choose a digit to generate (0-9)',
     options=list(range(10))
 )
 
-# Botão para gerar as imagens
-if st.button('Gerar imagens'): # 
-    st.subheader(f"Imagens geradas do dígito {digit_to_generate}") # 
-
-    # Gerar 5 imagens
+# Button to generate images
+if st.button('Generate images'):
+    st.subheader(f"Generated images of digit {digit_to_generate}")
+    
+    # Generate 5 images
     num_images = 5
-
-    # Prepara o ruído e os rótulos
+    
+    # Prepare noise and labels
     z = torch.randn(num_images, latent_dim).to(device)
     labels = torch.LongTensor([digit_to_generate] * num_images).to(device)
-
+    
     with torch.no_grad():
         generated_imgs = generator(z, labels)
-
-    # Re-normaliza as imagens de [-1, 1] para [0, 1] para exibição
+    
+    # Re-normalize images from [-1, 1] to [0, 1] for display
     generated_imgs = (generated_imgs + 1) / 2.0
-
-    # Exibe as imagens em 5 colunas
+    
+    # Display images in 5 columns
     cols = st.columns(num_images)
     for i, img_tensor in enumerate(generated_imgs):
         with cols[i]:
-            # Converte o tensor para um formato que st.image entende
+            # Convert tensor to a displayable format for st.image
             img_np = img_tensor.cpu().numpy().transpose(1, 2, 0)
-            st.image(img_np, caption=f'Amostra {i+1}', width=100)
+            st.image(img_np, caption=f'Sample {i+1}', width=100)
